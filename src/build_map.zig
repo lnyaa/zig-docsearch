@@ -15,10 +15,19 @@ pub fn build(state: *State, zig_std_path: []const u8) !void {
                     [_][]const u8{ zig_std_path, entry.name },
                 );
 
+                // TODO skip if it doesn't end with .zig, just in case
+
                 std.debug.warn("file: '{}'\n", path);
 
                 var file = try std.fs.File.openRead(path);
                 defer file.close();
+
+                const total_bytes = try file.getEndPos();
+                var data = try state.allocator.alloc(u8, total_bytes);
+                const bytes_read = try file.read(data);
+
+                // safety of life check
+                std.testing.expectEqual(bytes_read, total_bytes);
             },
             else => continue,
         }
