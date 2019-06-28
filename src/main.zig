@@ -1,12 +1,15 @@
 const std = @import("std");
 const states = @import("state.zig");
-const State = states.State;
+const build_map = @import("build_map.zig");
 
+const State = states.State;
 const OutError = std.fs.File.ReadError;
 const InError = std.fs.File.WriteError;
 
 fn do_search(state: *State, search_term: []u8) !void {
     var state_file = try std.fs.File.openRead("state.bin");
+    defer state_file.close();
+
     var in = state_file.inStream();
     var stream = &in.stream;
     var deserial = std.io.Deserializer(.Big, .Bit, OutError).init(stream);
@@ -15,7 +18,11 @@ fn do_search(state: *State, search_term: []u8) !void {
 }
 
 fn do_build(state: *State, zig_std_path: []u8) !void {
+    try build_map.build(state, zig_std_path);
+
     var state_file = try std.fs.File.openWrite("state.bin");
+    defer state_file.close();
+
     var out = state_file.outStream();
     var stream = &out.stream;
     var serial = std.io.Serializer(.Big, .Bit, InError).init(stream);
