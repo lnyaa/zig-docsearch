@@ -70,4 +70,19 @@ pub const State = struct {
         // maybe we could just catch an endofstream instead, idk.
         try serializer.serialize(u29(0));
     }
+
+    /// Add a file from the zig standard library into the state.
+    pub fn addFile(self: *State, path: []const u8) !void {
+        std.debug.warn("file: '{}'\n", path);
+
+        var file = try std.fs.File.openRead(path);
+        defer file.close();
+
+        const total_bytes = try file.getEndPos();
+        var data = try self.allocator.alloc(u8, total_bytes);
+        const bytes_read = try file.read(data);
+
+        // safety of life check
+        std.testing.expectEqual(bytes_read, total_bytes);
+    }
 };
