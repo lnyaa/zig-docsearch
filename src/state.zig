@@ -80,14 +80,15 @@ pub const State = struct {
 
     fn addNode(self: *State, path: []const u8) void {}
 
-    fn docToSlice(self: *State, tree: var, doc_opt: ?*Node.DocComment) ![][]u8 {
+    fn docToSlice(self: *State, tree: var, doc_opt: ?*Node.DocComment) ![][]const u8 {
         if (doc_opt) |doc| {
             var it = doc.lines.iterator(0);
             var lines: [][]const u8 = try self.allocator.alloc([]u8, 0);
 
             while (it.next()) |line_idx| {
                 lines = try self.allocator.realloc(lines, lines.len + 1);
-                lines[lines.len - 1] = std.mem.trimLeft(line, "/// ");
+                var line = tree.tokenSlice(line_idx.*);
+                lines[lines.len - 1] = std.mem.trimLeft(u8, line, "/// ");
             }
 
             return lines;
@@ -144,10 +145,20 @@ pub const State = struct {
                     }
                 },
                 .FnProto => blk: {
-                    var decl = @fieldParentPtr(Node.VarDecl, "base", child);
+                    var proto = @fieldParentPtr(Node.FnProto, "base", child);
 
-                    var visib_tok_opt = decl.visib_token;
-                    if (visib_tok_opt) |visib_tok| {}
+                    var visib_tok_opt = proto.visib_token;
+                    if (visib_tok_opt) |visib_tok| {
+                        std.debug.warn(
+                            "pub fn, name='{}'\n",
+                            tree.tokenSlice(proto.name_token.?),
+                        );
+
+                        var lines = try self.docToSlice(tree, proto.doc_comments);
+                        for (lines) |line| {
+                            std.debug.warn("\tdoc: '{}'\n", line);
+                        }
+                    }
                 },
                 else => continue,
             }
