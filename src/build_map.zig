@@ -15,7 +15,7 @@ pub fn build(state: *State, zig_std_path: []const u8, folder_path: []const u8) a
 
         switch (entry.kind) {
             .File => blk: {
-                // TODO skip if it doesn't end with .zig, just in case
+                if (!std.mem.endsWith(u8, entry.name, "zig")) continue;
                 try state.addFile(entry.name, path);
             },
             .Directory => blk: {

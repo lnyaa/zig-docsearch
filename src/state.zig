@@ -1,4 +1,5 @@
 const std = @import("std");
+const Node = std.zig.ast.Node;
 
 pub const StateMap = std.AutoHashMap([]const u8, []u8);
 
@@ -77,6 +78,8 @@ pub const State = struct {
         try serializer.serialize(u29(0));
     }
 
+    fn addNode(self: *State, path: []const u8) void {}
+
     /// Add a file from the zig standard library into the state.
     pub fn addFile(self: *State, rel_path: []const u8, full_path: []const u8) !void {
         std.debug.warn("adding file: '{}'..", rel_path);
@@ -96,6 +99,28 @@ pub const State = struct {
 
         // safety of life check
         std.testing.expectEqual(bytes_read, total_bytes);
+
+        var tree = try std.zig.parse(self.allocator, data);
+        var root = tree.root_node;
+        defer tree.deinit();
+
+        var idx: usize = 0;
+        while (root.iterate(idx)) |child| : (idx += 1) {
+            std.debug.warn("{}\n", child.id);
+            switch (child.id) {
+                .VarDecl => blk: {
+                    var decl_opt = Node.cast(child, Node.VarDecl);
+
+                    if (decl_opt) |decl| {
+                        std.debug.warn(
+                            "variable, name='{}'\n",
+                            tree.tokenSlice(decl.name_token),
+                        );
+                    }
+                },
+                else => continue,
+            }
+        }
 
         std.debug.warn("OK\n");
 
