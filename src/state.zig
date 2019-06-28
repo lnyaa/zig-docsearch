@@ -80,6 +80,22 @@ pub const State = struct {
 
     fn addNode(self: *State, path: []const u8) void {}
 
+    fn docToSlice(self: *State, tree: var, doc_opt: ?*Node.DocComment) ![][]u8 {
+        if (doc_opt) |doc| {
+            var it = doc.lines.iterator(0);
+            var lines: [][]const u8 = try self.allocator.alloc([]u8, 0);
+
+            while (it.next()) |line_idx| {
+                lines = try self.allocator.realloc(lines, lines.len + 1);
+                lines[lines.len - 1] = std.mem.trimLeft(line, "/// ");
+            }
+
+            return lines;
+        } else {
+            return [_][]u8{};
+        }
+    }
+
     /// Add a file from the zig standard library into the state.
     pub fn addFile(self: *State, rel_path: []const u8, full_path: []const u8) !void {
         std.debug.warn("adding file: '{}'..", rel_path);
@@ -106,17 +122,32 @@ pub const State = struct {
 
         var idx: usize = 0;
         while (root.iterate(idx)) |child| : (idx += 1) {
-            std.debug.warn("{}\n", child.id);
             switch (child.id) {
                 .VarDecl => blk: {
-                    var decl_opt = Node.cast(child, Node.VarDecl);
+                    var decl = @fieldParentPtr(Node.VarDecl, "base", child);
 
-                    if (decl_opt) |decl| {
+                    var visib_tok_opt = decl.visib_token;
+                    if (visib_tok_opt) |visib_tok| {
                         std.debug.warn(
-                            "variable, name='{}'\n",
+                            "pub variable, name='{}'\n",
                             tree.tokenSlice(decl.name_token),
                         );
+
+                        var lines = try self.docToSlice(tree, decl.doc_comments);
+                        for (lines) |line| {
+                            std.debug.warn("\tdoc: '{}'\n", line);
+                        }
+
+                        // check if from there the rhs is a struct or not,
+                        // and if it is, recursively go through its members
+                        // and add them to the state.map.
                     }
+                },
+                .FnProto => blk: {
+                    var decl = @fieldParentPtr(Node.VarDecl, "base", child);
+
+                    var visib_tok_opt = decl.visib_token;
+                    if (visib_tok_opt) |visib_tok| {}
                 },
                 else => continue,
             }
