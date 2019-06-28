@@ -18,7 +18,8 @@ fn do_search(state: *State, search_term: []u8) !void {
 }
 
 fn do_build(state: *State, zig_std_path: []u8) !void {
-    try build_map.build(state, zig_std_path);
+    try build_map.build(state, zig_std_path, zig_std_path);
+    std.debug.warn("build finished, {} total files\n", state.map.size);
 
     var state_file = try std.fs.File.openWrite("state.bin");
     defer state_file.close();
@@ -28,6 +29,7 @@ fn do_build(state: *State, zig_std_path: []u8) !void {
     var serial = std.io.Serializer(.Big, .Bit, InError).init(stream);
 
     try state.serialize(&serial);
+    std.debug.warn("serialization OK\n");
 }
 
 pub fn main() anyerror!void {

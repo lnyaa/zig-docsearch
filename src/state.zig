@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub const StateMap = std.AutoHashMap([]u8, []u8);
+pub const StateMap = std.AutoHashMap([]const u8, []u8);
 
 fn serializeStr(serializer: var, string: []const u8) !void {
     try serializer.serialize(@intCast(u29, string.len));
@@ -62,6 +62,12 @@ pub const State = struct {
         var it = self.map.iterator();
 
         while (it.next()) |kv| {
+            std.debug.warn(
+                "serializing '{}' ({} bytes)\n",
+                kv.key,
+                kv.value.len,
+            );
+
             try serializeStr(serializer, kv.key);
             try serializeStr(serializer, kv.value);
         }
@@ -72,17 +78,27 @@ pub const State = struct {
     }
 
     /// Add a file from the zig standard library into the state.
-    pub fn addFile(self: *State, path: []const u8) !void {
-        std.debug.warn("file: '{}'\n", path);
-
-        var file = try std.fs.File.openRead(path);
+    pub fn addFile(self: *State, rel_path: []const u8, full_path: []const u8) !void {
+        std.debug.warn("adding file: '{}'..", rel_path);
+        var file = try std.fs.File.openRead(full_path);
         defer file.close();
 
         const total_bytes = try file.getEndPos();
+        std.debug.warn("({} bytes)..", total_bytes);
+
+        if (total_bytes > (800 * 1024)) {
+            std.debug.warn("SKIP (too much)\n");
+            return;
+        }
+
         var data = try self.allocator.alloc(u8, total_bytes);
         const bytes_read = try file.read(data);
 
         // safety of life check
         std.testing.expectEqual(bytes_read, total_bytes);
+
+        std.debug.warn("OK\n");
+
+        _ = try self.map.put(rel_path, data);
     }
 };
