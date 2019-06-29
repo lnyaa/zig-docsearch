@@ -50,7 +50,10 @@ pub const State = struct {
 
     pub fn deserialize(self: *State, deserializer: var) !void {
         while (true) {
-            var length = try deserializer.deserialize(u29);
+            var length = deserializer.deserialize(u29) catch |err| {
+                if (err == error.EndOfStream) break;
+                return err;
+            };
             if (length == 0) break;
 
             // deserialize a KV pair and put() it

@@ -1,12 +1,13 @@
 const std = @import("std");
 const states = @import("state.zig");
 const build_map = @import("build_map.zig");
+const searches = @import("search.zig");
 
 const State = states.State;
 const OutError = std.fs.File.ReadError;
 const InError = std.fs.File.WriteError;
 
-fn do_search(state: *State, search_term: []u8) !void {
+fn doSearch(state: *State, search_term: []u8) !void {
     var state_file = try std.fs.File.openRead("state.bin");
     defer state_file.close();
 
@@ -15,11 +16,11 @@ fn do_search(state: *State, search_term: []u8) !void {
     var deserial = std.io.Deserializer(.Big, .Bit, OutError).init(stream);
 
     try deserial.deserializeInto(state);
-
-    // TODO
+    std.debug.warn("deserialization OK\n");
+    try searches.doSearch(state, search_term);
 }
 
-fn do_build(state: *State, zig_std_path: []u8) !void {
+fn doBuild(state: *State, zig_std_path: []u8) !void {
     try build_map.build(state, "std", zig_std_path);
     std.debug.warn("build finished, {} total defs\n", state.map.size);
 
@@ -48,10 +49,10 @@ pub fn main() anyerror!void {
 
     if (std.mem.eql(u8, action, "build")) {
         const zig_std_path = try (args_it.next(allocator) orelse @panic("expected zig stdlib path arg"));
-        try do_build(&state, zig_std_path);
+        try doBuild(&state, zig_std_path);
     } else if (std.mem.eql(u8, action, "search")) {
         const search_term = try (args_it.next(allocator) orelse @panic("expected search term arg"));
-        try do_search(&state, search_term);
+        try doSearch(&state, search_term);
     } else {
         @panic("invalid action");
     }
