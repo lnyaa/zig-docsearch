@@ -88,7 +88,10 @@ pub fn doSearch(state: *State, unprep_term: []u8) !void {
     var kvs_slice = kvs.toSlice();
     std.sort.sort(ScoreMap.KV, kvs_slice, compareFunc);
 
+    var stdout_file = try std.io.getStdOut();
+    const stdout = &stdout_file.outStream().stream;
+
     for (kvs_slice[0..15]) |kv| {
-        std.debug.warn("{}\n", kv.key);
+        try stdout.print("{}\n", kv.key);
     }
 }
