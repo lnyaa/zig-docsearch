@@ -5,6 +5,14 @@ const Node = std.zig.ast.Node;
 const Tree = std.zig.ast.Tree;
 const State = states.State;
 
+pub fn appendNamespace(
+    allocator: *std.mem.Allocator,
+    namespace: []const u8,
+    element: []const u8,
+) ![]const u8 {
+    return try std.mem.join(allocator, ".", [_][]const u8{ namespace, element });
+}
+
 /// Check if the right hand side of the declaration is an @import, and if it is
 /// recurse build() into that file, with an updated namespace, etc.
 fn recurseIfImport(
@@ -40,8 +48,7 @@ fn recurseIfImport(
     var token = tree.tokenSlice(arg1.token);
     token = token[1 .. token.len - 1];
 
-    var buf: [1000]u8 = undefined;
-    var ns = try std.fmt.bufPrint(buf[0..], "{}.{}", namespace, decl_name);
+    var ns = try appendNamespace(state.allocator, namespace, decl_name);
     var dirname = std.fs.path.dirname(zig_src).?;
 
     var basename = std.fs.path.basename(zig_src);
@@ -69,6 +76,36 @@ fn recurseIfImport(
     };
 
     try build(state, ns, path);
+}
+
+fn processStruct(
+    state: *State,
+    tree: *Tree,
+    namespace: []const u8,
+    fields_and_decls: *Node.Root.DeclList,
+) !void {
+    // we are inside a struct, so we must iterate through its definitions.
+    var it = fields_and_decls.iterator(0);
+
+    while (it.next()) |node_ptr| {
+        var node = node_ptr.*;
+
+        switch (node.id) {
+            .ContainerField => blk: {
+                var field = @fieldParentPtr(Node.ContainerField, "base", node);
+                var field_name = tree.tokenSlice(field.name_token);
+                try state.addNode(tree, namespace, field_name, field.doc_comments);
+            },
+
+            .FnProto => blk: {
+                var proto = @fieldParentPtr(Node.FnProto, "base", node);
+                var fn_name = tree.tokenSlice(proto.name_token.?);
+                try state.addNode(tree, namespace, fn_name, proto.doc_comments);
+            },
+
+            else => continue,
+        }
+    }
 }
 
 /// Build the state map
@@ -127,9 +164,24 @@ pub fn build(
                         zig_src_path,
                     ),
 
-                    // TODO recurse over the definitions there IF its
-                    // a struct definition.
-                    .SuffixOp => {},
+                    .ContainerDecl => blk: {
+                        var con_decl = @fieldParentPtr(Node.ContainerDecl, "base", init_node);
+                        var kind_token = tree.tokenSlice(con_decl.kind_token);
+
+                        try state.addNode(tree, namespace, decl_name, decl.doc_comments);
+
+                        if (std.mem.eql(u8, kind_token, "struct")) {
+                            try processStruct(
+                                state,
+                                tree,
+                                try appendNamespace(state.allocator, namespace, decl_name),
+                                &con_decl.fields_and_decls,
+                            );
+                        } else {
+                            try state.addNode(tree, namespace, decl_name, decl.doc_comments);
+                        }
+                    },
+
                     else => try state.addNode(tree, namespace, decl_name, decl.doc_comments),
                 }
             },
