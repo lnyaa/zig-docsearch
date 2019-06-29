@@ -6,6 +6,6 @@ search over zig stdlib doc comments
 ```bash
 zig build install --prefix ~/.local/
 
-# build the state out of the std dir
-zig-docsearch build /path/to/zig/source/std
+# build the state out of the std file
+zig-docsearch build /path/to/zig/source/std/std.zig
 ```
