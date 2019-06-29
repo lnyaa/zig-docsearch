@@ -1,4 +1,5 @@
 const std = @import("std");
+const build_map = @import("build_map.zig");
 const Node = std.zig.ast.Node;
 const Tree = std.zig.ast.Tree;
 
@@ -170,10 +171,10 @@ pub const State = struct {
         node_name: []const u8,
         doc: ?*Node.DocComment,
     ) !void {
-        var full_name = std.mem.join(
+        var full_name = try build_map.appendNamespace(
             self.allocator,
-            ".",
-            [_][]const u8{ namespace, node_name },
+            namespace,
+            node_name,
         );
 
         std.debug.warn("node: {}\n", full_name);
@@ -182,5 +183,8 @@ pub const State = struct {
         for (lines) |line| {
             std.debug.warn("\tdoc: {}\n", line);
         }
+
+        var lines_single = try std.mem.join(self.allocator, "\n", lines);
+        _ = try self.map.put(full_name, lines_single);
     }
 };
