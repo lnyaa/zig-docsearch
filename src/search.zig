@@ -93,6 +93,14 @@ pub fn doSearch(state: *State, unprep_term: []u8) !void {
 
     if (kvs_slice.len > 15) kvs_slice = kvs_slice[0..14];
     for (kvs_slice) |kv| {
-        try stdout.print("{}\n", kv.key);
+        var kv_opt = state.map.get(kv.key);
+
+        if (kv_opt) |kv_state| {
+            if (kv_state.value.len > 0) {
+                try stdout.print("{}:\n\t{}\n---\n", kv.key, kv_state.value);
+            } else {
+                try stdout.print("{}\n---\n", kv.key);
+            }
+        }
     }
 }
