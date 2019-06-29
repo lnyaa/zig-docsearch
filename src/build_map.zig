@@ -5,27 +5,6 @@ const Node = std.zig.ast.Node;
 const Tree = std.zig.ast.Tree;
 const State = states.State;
 
-fn docToSlice(
-    allocator: *std.mem.Allocator,
-    tree: var,
-    doc_opt: ?*Node.DocComment,
-) ![][]const u8 {
-    if (doc_opt) |doc| {
-        var it = doc.lines.iterator(0);
-        var lines: [][]const u8 = try allocator.alloc([]u8, 0);
-
-        while (it.next()) |line_idx| {
-            lines = try allocator.realloc(lines, lines.len + 1);
-            var line = tree.tokenSlice(line_idx.*);
-            lines[lines.len - 1] = std.mem.trimLeft(u8, line, "/// ");
-        }
-
-        return lines;
-    } else {
-        return [_][]u8{};
-    }
-}
-
 /// Check if the right hand side of the declaration is an @import, and if it is
 /// recurse build() into that file, with an updated namespace, etc.
 fn recurseIfImport(
@@ -116,25 +95,37 @@ pub fn build(
     var idx: usize = 0;
     while (root.iterate(idx)) |child| : (idx += 1) {
         switch (child.id) {
+            .FnProto => blk: {
+                var proto = @fieldParentPtr(Node.FnProto, "base", child);
+
+                if (proto.visib_token) |_| {
+                    var fn_name = tree.tokenSlice(proto.name_token.?);
+                    try state.addNode(tree, namespace, fn_name, proto.doc_comments);
+                }
+            },
+
             .VarDecl => blk: {
                 var decl = @fieldParentPtr(Node.VarDecl, "base", child);
 
                 var visib_tok_opt = decl.visib_token;
                 if (visib_tok_opt) |_| {
                     var init_node = decl.init_node.?;
+                    var decl_name = tree.tokenSlice(decl.name_token);
 
                     switch (init_node.id) {
-                        .BuiltinCall => blk: {
-                            try recurseIfImport(
-                                state,
-                                tree,
-                                namespace,
-                                decl,
-                                init_node,
-                                zig_src_path,
-                            );
-                        },
-                        else => continue,
+                        .BuiltinCall => try recurseIfImport(
+                            state,
+                            tree,
+                            namespace,
+                            decl,
+                            init_node,
+                            zig_src_path,
+                        ),
+
+                        // TODO recurse over the definitions there IF its
+                        // a struct definition.
+                        .SuffixOp => {},
+                        else => try state.addNode(tree, namespace, decl_name, decl.doc_comments),
                     }
                 }
             },

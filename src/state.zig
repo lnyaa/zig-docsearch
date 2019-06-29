@@ -126,32 +126,6 @@ pub const State = struct {
         // obvious at first.
         while (root.iterate(idx)) |child| : (idx += 1) {
             switch (child.id) {
-                .FnProto => blk: {
-                    var proto = @fieldParentPtr(Node.FnProto, "base", child);
-
-                    var visib_tok_opt = proto.visib_token;
-                    if (visib_tok_opt) |visib_tok| {
-                        var fn_name = tree.tokenSlice(proto.name_token.?);
-
-                        var lines = try self.docToSlice(tree, proto.doc_comments);
-                        for (lines) |line| {
-                            std.debug.warn("\tdoc: '{}'\n", line);
-                        }
-
-                        var buf: [1024]u8 = undefined;
-                        var fn_key = try std.fmt.bufPrint(buf[0..], "{}", fn_name);
-                        var finished_lines = try std.mem.join(self.allocator, "\n", lines);
-
-                        std.debug.warn(
-                            "pub fn, key='{}'\n\tdoc: '{}'\n",
-                            fn_key,
-                            finished_lines,
-                        );
-
-                        _ = try self.map.put(fn_key, finished_lines);
-                    }
-                },
-
                 .VarDecl => blk: {
                     var decl = @fieldParentPtr(Node.VarDecl, "base", child);
 
