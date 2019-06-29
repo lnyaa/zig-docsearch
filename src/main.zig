@@ -15,11 +15,13 @@ fn do_search(state: *State, search_term: []u8) !void {
     var deserial = std.io.Deserializer(.Big, .Bit, OutError).init(stream);
 
     try deserial.deserializeInto(state);
+
+    // TODO
 }
 
 fn do_build(state: *State, zig_std_path: []u8) !void {
     try build_map.build(state, "std", zig_std_path);
-    std.debug.warn("build finished, {} total files\n", state.map.size);
+    std.debug.warn("build finished, {} total defs\n", state.map.size);
 
     var state_file = try std.fs.File.openWrite("state.bin");
     defer state_file.close();
