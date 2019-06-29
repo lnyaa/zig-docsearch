@@ -91,7 +91,8 @@ pub fn doSearch(state: *State, unprep_term: []u8) !void {
     var stdout_file = try std.io.getStdOut();
     const stdout = &stdout_file.outStream().stream;
 
-    for (kvs_slice[0..15]) |kv| {
+    if (kvs_slice.len > 15) kvs_slice = kvs_slice[0..14];
+    for (kvs_slice) |kv| {
         try stdout.print("{}\n", kv.key);
     }
 }
