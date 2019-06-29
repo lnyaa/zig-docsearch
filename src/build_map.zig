@@ -5,6 +5,8 @@ const Node = std.zig.ast.Node;
 const Tree = std.zig.ast.Tree;
 const State = states.State;
 
+/// Check if the right hand side of the declaration is an @import, and if it is
+/// recurse build() into that file, with an updated namespace, etc.
 fn recurseIfImport(
     state: *State,
     tree: *Tree,
@@ -16,46 +18,50 @@ fn recurseIfImport(
     var builtin_call = @fieldParentPtr(Node.BuiltinCall, "base", init_node);
     var call_tok = tree.tokenSlice(builtin_call.builtin_token);
 
-    if (std.mem.eql(u8, call_tok, "@import")) {
-        var it = builtin_call.params.iterator(0);
+    if (!std.mem.eql(u8, call_tok, "@import")) return;
+    var it = builtin_call.params.iterator(0);
+    var arg1_ptrd = it.next().?;
 
-        var arg1_opt = it.next();
-        if (arg1_opt) |arg1_ptrd| {
-            var arg1_node = arg1_ptrd.*;
-            if (arg1_node.id != .StringLiteral) return;
+    // the builtin_call.params has *Node, and SegmentedList returns
+    // **Node... weird.
+    var arg1_node = arg1_ptrd.*;
+    if (arg1_node.id != .StringLiteral) return;
 
-            var arg1 = @fieldParentPtr(Node.StringLiteral, "base", arg1_node);
-            var token = tree.tokenSlice(arg1.token);
-            token = token[1 .. token.len - 1];
+    // here we properly extract the main argument of @import and do our
+    // big think moments until we reach proper arguments for build().
+    var arg1 = @fieldParentPtr(Node.StringLiteral, "base", arg1_node);
+    var token = tree.tokenSlice(arg1.token);
+    token = token[1 .. token.len - 1];
 
-            var buf: [1000]u8 = undefined;
-            var ns = try std.fmt.bufPrint(buf[0..], "{}.{}", namespace, decl_name);
-            var dirname_opt = std.fs.path.dirname(zig_src);
+    var buf: [1000]u8 = undefined;
+    var ns = try std.fmt.bufPrint(buf[0..], "{}.{}", namespace, decl_name);
+    var dirname = std.fs.path.dirname(zig_src).?;
 
-            var basename = std.fs.path.basename(zig_src);
-            var name_it = std.mem.tokenize(basename, ".");
-            var name = name_it.next().?;
+    var basename = std.fs.path.basename(zig_src);
+    var name_it = std.mem.tokenize(basename, ".");
+    var name = name_it.next().?;
 
-            if (dirname_opt) |dirname| {
-                std.debug.warn("file: '{}'\n", token);
-                build(
-                    state,
-                    ns,
-                    try std.fs.path.join(state.allocator, [_][]const u8{ dirname, token }),
-                ) catch |err| {
-                    if (err == error.FileNotFound) {
-                        try build(
-                            state,
-                            ns,
-                            try std.fs.path.join(state.allocator, [_][]const u8{ dirname, name, token }),
-                        );
-                    } else {
-                        return err;
-                    }
-                };
-            }
+    // the main example of the reason of this behavior is the std.valgrind
+    // library. it just has something like @import("callgrind.zig") where
+    // callgrind.zig is in std/valgrind/callgrind.zig, not std/callgrind.zig.
+
+    var path = try std.fs.path.join(
+        state.allocator,
+        [_][]const u8{ dirname, token },
+    );
+
+    std.fs.File.access(path) catch |err| {
+        if (err == error.FileNotFound) {
+            path = try std.fs.path.join(
+                state.allocator,
+                [_][]const u8{ dirname, name, token },
+            );
+        } else {
+            return err;
         }
-    }
+    };
+
+    try build(state, ns, path);
 }
 
 /// Build the state map
