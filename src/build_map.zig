@@ -91,6 +91,11 @@ pub fn build(
     var root = tree.root_node;
 
     // evaluate that tree and go through it.
+    // the Tree is traversed in a simple manner:
+    // - if we find a public function, add it to the state
+    // - if we find a public var declaration on top level, we check the right
+    //   hand side for an @import, if that's the case, we recurse into its
+    //   definitions.
 
     var idx: usize = 0;
     while (root.iterate(idx)) |child| : (idx += 1) {
@@ -98,35 +103,34 @@ pub fn build(
             .FnProto => blk: {
                 var proto = @fieldParentPtr(Node.FnProto, "base", child);
 
-                if (proto.visib_token) |_| {
-                    var fn_name = tree.tokenSlice(proto.name_token.?);
-                    try state.addNode(tree, namespace, fn_name, proto.doc_comments);
-                }
+                _ = proto.visib_token orelse continue;
+
+                var fn_name = tree.tokenSlice(proto.name_token.?);
+                try state.addNode(tree, namespace, fn_name, proto.doc_comments);
             },
 
             .VarDecl => blk: {
                 var decl = @fieldParentPtr(Node.VarDecl, "base", child);
 
-                var visib_tok_opt = decl.visib_token;
-                if (visib_tok_opt) |_| {
-                    var init_node = decl.init_node.?;
-                    var decl_name = tree.tokenSlice(decl.name_token);
+                _ = decl.visib_token orelse continue;
 
-                    switch (init_node.id) {
-                        .BuiltinCall => try recurseIfImport(
-                            state,
-                            tree,
-                            namespace,
-                            decl,
-                            init_node,
-                            zig_src_path,
-                        ),
+                var init_node = decl.init_node.?;
+                var decl_name = tree.tokenSlice(decl.name_token);
 
-                        // TODO recurse over the definitions there IF its
-                        // a struct definition.
-                        .SuffixOp => {},
-                        else => try state.addNode(tree, namespace, decl_name, decl.doc_comments),
-                    }
+                switch (init_node.id) {
+                    .BuiltinCall => try recurseIfImport(
+                        state,
+                        tree,
+                        namespace,
+                        decl,
+                        init_node,
+                        zig_src_path,
+                    ),
+
+                    // TODO recurse over the definitions there IF its
+                    // a struct definition.
+                    .SuffixOp => {},
+                    else => try state.addNode(tree, namespace, decl_name, decl.doc_comments),
                 }
             },
 
