@@ -81,21 +81,14 @@ pub fn doSearch(state: *State, unprep_term: []u8) !void {
 
         if (score > 0.05) {
             var kv_score = try res.getOrPutValue(kv.key, score);
-            std.debug.warn("{} => {}\n", kv_score.key, kv_score.value);
             try kvs.append(kv_score.*);
         }
     }
 
     var kvs_slice = kvs.toSlice();
-    for (kvs_slice) |kv| {
-        std.debug.warn("kv {}\n", kv.key);
-    }
-
     std.sort.sort(ScoreMap.KV, kvs_slice, compareFunc);
-    for (kvs_slice) |kv| {
-        std.debug.warn("kv sorted {}\n", kv.key);
-    }
 
-    //s = sorted(res, key=lambda e: e[1], reverse=True)
-    //return s
+    for (kvs_slice) |kv| {
+        std.debug.warn("{}\n", kv.key);
+    }
 }

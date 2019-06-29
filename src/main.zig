@@ -16,7 +16,6 @@ fn doSearch(state: *State, search_term: []u8) !void {
     var deserial = std.io.Deserializer(.Big, .Bit, OutError).init(stream);
 
     try deserial.deserializeInto(state);
-    std.debug.warn("deserialization OK\n");
     try searches.doSearch(state, search_term);
 }
 
