@@ -5,20 +5,48 @@ const Node = std.zig.ast.Node;
 const Tree = std.zig.ast.Tree;
 const State = states.State;
 
+fn docToSlice(
+    allocator: *std.mem.Allocator,
+    tree: var,
+    doc_opt: ?*Node.DocComment,
+) ![][]const u8 {
+    if (doc_opt) |doc| {
+        var it = doc.lines.iterator(0);
+        var lines: [][]const u8 = try allocator.alloc([]u8, 0);
+
+        while (it.next()) |line_idx| {
+            lines = try allocator.realloc(lines, lines.len + 1);
+            var line = tree.tokenSlice(line_idx.*);
+            lines[lines.len - 1] = std.mem.trimLeft(u8, line, "/// ");
+        }
+
+        return lines;
+    } else {
+        return [_][]u8{};
+    }
+}
+
 /// Check if the right hand side of the declaration is an @import, and if it is
 /// recurse build() into that file, with an updated namespace, etc.
 fn recurseIfImport(
     state: *State,
     tree: *Tree,
     namespace: []const u8,
-    decl_name: []const u8,
+    decl: *Node.VarDecl,
     init_node: *Node,
     zig_src: []const u8,
 ) anyerror!void {
     var builtin_call = @fieldParentPtr(Node.BuiltinCall, "base", init_node);
     var call_tok = tree.tokenSlice(builtin_call.builtin_token);
+    var decl_name = tree.tokenSlice(decl.name_token);
 
-    if (!std.mem.eql(u8, call_tok, "@import")) return;
+    // if the builtin call isnt @import, but its something else, e.g
+    // @intCast() or smth else, we add it as a node.
+    if (!std.mem.eql(u8, call_tok, "@import")) {
+        try state.addNode(tree, namespace, decl_name, decl.doc_comments);
+        return;
+    }
+
     var it = builtin_call.params.iterator(0);
     var arg1_ptrd = it.next().?;
 
@@ -93,15 +121,15 @@ pub fn build(
 
                 var visib_tok_opt = decl.visib_token;
                 if (visib_tok_opt) |_| {
-                    var decl_name = tree.tokenSlice(decl.name_token);
                     var init_node = decl.init_node.?;
+
                     switch (init_node.id) {
                         .BuiltinCall => blk: {
                             try recurseIfImport(
                                 state,
                                 tree,
                                 namespace,
-                                decl_name,
+                                decl,
                                 init_node,
                                 zig_src_path,
                             );

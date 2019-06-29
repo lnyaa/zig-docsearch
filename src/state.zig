@@ -1,5 +1,6 @@
 const std = @import("std");
 const Node = std.zig.ast.Node;
+const Tree = std.zig.ast.Tree;
 
 pub const StateMap = std.AutoHashMap([]const u8, []u8);
 
@@ -77,8 +78,6 @@ pub const State = struct {
         // maybe we could just catch an endofstream instead, idk.
         try serializer.serialize(u29(0));
     }
-
-    fn addNode(self: *State, path: []const u8) void {}
 
     fn docToSlice(self: *State, tree: var, doc_opt: ?*Node.DocComment) ![][]const u8 {
         if (doc_opt) |doc| {
@@ -188,5 +187,26 @@ pub const State = struct {
         std.debug.warn("OK\n");
 
         _ = try self.map.put(rel_path, data);
+    }
+
+    pub fn addNode(
+        self: *State,
+        tree: *Tree,
+        namespace: []const u8,
+        node_name: []const u8,
+        doc: ?*Node.DocComment,
+    ) !void {
+        var full_name = std.mem.join(
+            self.allocator,
+            ".",
+            [_][]const u8{ namespace, node_name },
+        );
+
+        std.debug.warn("node: {}\n", full_name);
+        var lines = try self.docToSlice(tree, doc);
+
+        for (lines) |line| {
+            std.debug.warn("\tdoc: {}\n", line);
+        }
     }
 };
