@@ -28,22 +28,31 @@ fn recurseIfImport(
             var token = tree.tokenSlice(arg1.token);
             token = token[1 .. token.len - 1];
 
-            var tok_it = std.mem.tokenize(token, ".");
-            var name_opt = tok_it.next();
+            var buf: [1000]u8 = undefined;
+            var ns = try std.fmt.bufPrint(buf[0..], "{}.{}", namespace, decl_name);
+            var dirname_opt = std.fs.path.dirname(zig_src);
 
-            if (name_opt) |name| {
-                var buf: [1000]u8 = undefined;
-                var ns = try std.fmt.bufPrint(buf[0..], "{}.{}", namespace, decl_name);
-                var dirname_opt = std.fs.path.dirname(zig_src);
+            var basename = std.fs.path.basename(zig_src);
+            var name_it = std.mem.tokenize(basename, ".");
+            var name = name_it.next().?;
 
-                if (dirname_opt) |dirname| {
-                    std.debug.warn("file: '{}'\n", token);
-                    try build(
-                        state,
-                        ns,
-                        try std.fs.path.join(state.allocator, [_][]const u8{ dirname, token }),
-                    );
-                }
+            if (dirname_opt) |dirname| {
+                std.debug.warn("file: '{}'\n", token);
+                build(
+                    state,
+                    ns,
+                    try std.fs.path.join(state.allocator, [_][]const u8{ dirname, token }),
+                ) catch |err| {
+                    if (err == error.FileNotFound) {
+                        try build(
+                            state,
+                            ns,
+                            try std.fs.path.join(state.allocator, [_][]const u8{ dirname, name, token }),
+                        );
+                    } else {
+                        return err;
+                    }
+                };
             }
         }
     }
