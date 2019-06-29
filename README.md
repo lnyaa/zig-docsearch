@@ -14,8 +14,8 @@ search over zig stdlib doc comments
 zig build install --prefix ~/.local/
 
 # build the state out of the std file in your zig installation
-zig-docsearch build /path/to/zig/source/std/std.zig
+zig-docsearch ./state.bin build /path/to/zig/source/std/std.zig
 
 # search through
-zig-docsearch search 'mem'
+zig-docsearch ./state.bin search 'mem'
 ```
