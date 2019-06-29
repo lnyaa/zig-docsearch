@@ -1,5 +1,11 @@
 # zig-docsearch
+
 search over zig stdlib doc comments
+
+## limitations
+
+ - structs with `@import`s won't be checked
+ - structs that don't have `pub` members will still be counted towards the end
 
 ## using
 
