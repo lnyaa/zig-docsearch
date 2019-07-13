@@ -56,9 +56,11 @@ pub fn main() anyerror!void {
 
     if (std.mem.eql(u8, action, "build")) {
         const zig_std_path = try (args_it.next(allocator) orelse @panic("expected zig stdlib path arg"));
+
         try doBuild(state_path, &state, zig_std_path);
     } else if (std.mem.eql(u8, action, "search")) {
         const search_term = try (args_it.next(allocator) orelse @panic("expected search term arg"));
+
         try doSearch(state_path, &state, search_term);
     } else {
         @panic("invalid action");

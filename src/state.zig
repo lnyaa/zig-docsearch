@@ -5,6 +5,8 @@ const Tree = std.zig.ast.Tree;
 
 pub const StateMap = std.AutoHashMap([]const u8, []u8);
 
+/// Serialize a string into the given serializer. Uses a simple u29 length
+/// prefix + the string itself.
 fn serializeStr(serializer: var, string: []const u8) !void {
     try serializer.serialize(@intCast(u29, string.len));
     for (string) |byte| {
@@ -12,6 +14,8 @@ fn serializeStr(serializer: var, string: []const u8) !void {
     }
 }
 
+/// Represents the current amount of knowledge being held by the state
+/// file into memory.
 pub const State = struct {
     allocator: *std.mem.Allocator,
     map: StateMap,
@@ -23,6 +27,7 @@ pub const State = struct {
         };
     }
 
+    /// Deserialize a string from the stream into memory.
     fn deserializeStr(
         self: *State,
         deserializer: var,
@@ -87,8 +92,8 @@ pub const State = struct {
         std.debug.warn("finished {} elements\n", cnt);
     }
 
-    /// Gets a given Node.DocComment and converts it to [][]const u8, with the
-    /// doc comment token trimmed out.
+    /// From a given Node.DocComment, convert it to [][]const u8, with the
+    /// doc comment tokens trimmed out.
     fn docToSlice(self: *State, tree: var, doc_opt: ?*Node.DocComment) ![][]const u8 {
         if (doc_opt) |doc| {
             var it = doc.lines.iterator(0);
@@ -107,7 +112,7 @@ pub const State = struct {
         }
     }
 
-    /// Add a given node (not all by itself) into the state.
+    /// Add a given node (not the full Node structure) into the state.
     pub fn addNode(
         self: *State,
         tree: *Tree,

@@ -55,14 +55,18 @@ fn recurseIfImport(
     var name_it = std.mem.tokenize(basename, ".");
     var name = name_it.next().?;
 
-    // the main example of the reason of this behavior is the std.valgrind
-    // library. it just has something like @import("callgrind.zig") where
-    // callgrind.zig is in std/valgrind/callgrind.zig, not std/callgrind.zig.
-
     var path = try std.fs.path.join(
         state.allocator,
         [_][]const u8{ dirname, token },
     );
+
+    // the fallback to {dirname, name, token} exists since @import() calls
+    // can point to the relative path of the current file plus the file's name
+    // itself. take for example std.valgrind,
+    // that is currently at std/valgrind.zig.
+
+    // it contains @import("callgrind.zig"), but it isn't at std/callgrind.zig,
+    // but at std/valgrind/callgrind.zig
 
     std.fs.File.access(path) catch |err| {
         if (err == error.FileNotFound) {
@@ -108,7 +112,10 @@ fn processStruct(
     }
 }
 
-/// Build the state map
+/// Build the state map, given the current state, the namespace of the current
+/// file, e.g "std.os", and the current source path. this function shall be
+/// called first with the path to the root std.zig file, usually found at
+/// $LIB/zig/std/std.zig.
 pub fn build(
     state: *State,
     namespace: []const u8,
