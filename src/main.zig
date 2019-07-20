@@ -2,6 +2,7 @@ const std = @import("std");
 const states = @import("state.zig");
 const build_map = @import("build_map.zig");
 const searches = @import("search.zig");
+const htmlgen = @import("htmlgen.zig");
 
 const State = states.State;
 const OutError = std.fs.File.ReadError;
@@ -25,8 +26,6 @@ fn loadState(state_path: []const u8, state: *State) !void {
 fn doSearch(state: *State, search_term: []u8) !void {
     try searches.doSearch(state, search_term);
 }
-
-fn doHtmlGen(state: *State, html_out_path: []const u8) void {}
 
 fn doBuild(state_path: []const u8, state: *State, zig_std_path: []u8) !void {
     try build_map.build(state, "std", zig_std_path);
@@ -72,7 +71,7 @@ pub fn main() anyerror!void {
         const out_path = try (args_it.next(allocator) orelse @panic("expected out path arg"));
 
         try loadState(state_path, &state);
-        doHtmlGen(&state, out_path);
+        try htmlgen.genHtml(&state, out_path);
     } else {
         @panic("invalid action");
     }
