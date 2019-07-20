@@ -7,7 +7,7 @@ const State = states.State;
 const OutError = std.fs.File.ReadError;
 const InError = std.fs.File.WriteError;
 
-fn doSearch(state_path: []const u8, state: *State, search_term: []u8) !void {
+fn loadState(state_path: []const u8, state: *State) !void {
     var path = try std.fs.path.resolve(
         state.allocator,
         [_][]const u8{state_path},
@@ -20,6 +20,10 @@ fn doSearch(state_path: []const u8, state: *State, search_term: []u8) !void {
     var deserial = std.io.Deserializer(.Big, .Bit, OutError).init(stream);
 
     try deserial.deserializeInto(state);
+}
+
+fn doSearch(state_path: []const u8, state: *State, search_term: []u8) !void {
+    try loadState(state_path, state);
     try searches.doSearch(state, search_term);
 }
 
@@ -62,6 +66,8 @@ pub fn main() anyerror!void {
         const search_term = try (args_it.next(allocator) orelse @panic("expected search term arg"));
 
         try doSearch(state_path, &state, search_term);
+    } else if (std.mem.eql(u8, action, "htmlgen")) {
+        //try doHtmlGen(state_path, &state);
     } else {
         @panic("invalid action");
     }
