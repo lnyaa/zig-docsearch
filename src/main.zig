@@ -22,10 +22,11 @@ fn loadState(state_path: []const u8, state: *State) !void {
     try deserial.deserializeInto(state);
 }
 
-fn doSearch(state_path: []const u8, state: *State, search_term: []u8) !void {
-    try loadState(state_path, state);
+fn doSearch(state: *State, search_term: []u8) !void {
     try searches.doSearch(state, search_term);
 }
+
+fn doHtmlGen(state: *State, html_out_path: []const u8) void {}
 
 fn doBuild(state_path: []const u8, state: *State, zig_std_path: []u8) !void {
     try build_map.build(state, "std", zig_std_path);
@@ -65,9 +66,13 @@ pub fn main() anyerror!void {
     } else if (std.mem.eql(u8, action, "search")) {
         const search_term = try (args_it.next(allocator) orelse @panic("expected search term arg"));
 
-        try doSearch(state_path, &state, search_term);
+        try loadState(state_path, &state);
+        try doSearch(&state, search_term);
     } else if (std.mem.eql(u8, action, "htmlgen")) {
-        //try doHtmlGen(state_path, &state);
+        const out_path = try (args_it.next(allocator) orelse @panic("expected out path arg"));
+
+        try loadState(state_path, &state);
+        doHtmlGen(&state, out_path);
     } else {
         @panic("invalid action");
     }
