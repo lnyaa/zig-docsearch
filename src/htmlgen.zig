@@ -12,16 +12,42 @@ fn printToc(state: *State, stream: var) !void {
     var buf = try state.allocator.alloc(u8, 1024);
     defer state.allocator.free(buf);
 
+    // TODO have State have a tree-like structure instead of just a
+    // table of <std.*> to docstring.
+
     while (it.next()) |kv| {
         const atag = try std.fmt.bufPrint(
             buf,
-            "\t<a id=\"{}\" href=\"#{}\">{}</a>",
+            "\t<a id=\"toc-{}\" href=\"#{}\">{}</a>",
             kv.key,
             kv.key,
             kv.key,
         );
 
         try stream.print("\t<li>{}</li>", atag);
+    }
+
+    try stream.print("</ul>");
+}
+
+fn printContents(state: *State, stream: var) !void {
+    var it = state.map.iterator();
+    try stream.print("<ul>");
+
+    var buf = try state.allocator.alloc(u8, 1024);
+    defer state.allocator.free(buf);
+
+    while (it.next()) |kv| {
+        const h1tag = try std.fmt.bufPrint(
+            buf,
+            "\t<h1 id=\"{}\"><a href=\"#toc-{}\">{}</a> <a class=\"hdr\" href=\"#{}\">[link]</a></h1>",
+            kv.key,
+            kv.key,
+            kv.key,
+            kv.key,
+        );
+
+        try stream.print("\t{}<p>{}</p>", h1tag, kv.value);
     }
 
     try stream.print("</ul>");
@@ -42,11 +68,13 @@ pub fn genHtml(state: *State, out_path: []const u8) !void {
     try stream.print("</head>\n");
 
     try stream.print("<body>\n");
+
     try stream.print("<div id=\"contents\">\n");
-
     try printToc(state, stream);
-
     try stream.print("</div>\n");
+
+    try printContents(state, stream);
+
     try stream.print("</body>\n");
 
     try stream.print("</html>\n");
