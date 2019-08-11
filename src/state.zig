@@ -3,7 +3,7 @@ const build_map = @import("build_map.zig");
 const Node = std.zig.ast.Node;
 const Tree = std.zig.ast.Tree;
 
-pub const StateMap = std.AutoHashMap([]const u8, []u8);
+const StateMap = @import("map.zig").StringKeyHashMap([]u8);
 
 /// Serialize a string into the given serializer. Uses a simple u29 length
 /// prefix + the string itself.

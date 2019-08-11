@@ -2,8 +2,7 @@ const std = @import("std");
 const states = @import("state.zig");
 
 const State = states.State;
-
-const ScoreMap = std.AutoHashMap([]const u8, f32);
+const ScoreMap = @import("map.zig").StringKeyHashMap(f32);
 
 fn doCount(haystack: []u8, needle: []u8) usize {
     var count: usize = 0;
