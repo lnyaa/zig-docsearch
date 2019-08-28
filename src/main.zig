@@ -46,11 +46,9 @@ fn doBuild(state_path: []const u8, state: *State, zig_std_path: []u8) !void {
 }
 
 pub fn main() anyerror!void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.direct_allocator);
-    defer arena.deinit();
-
-    var allocator = &arena.allocator;
+    var allocator = std.heap.direct_allocator;
     var state = State.init(allocator);
+    defer state.deinit();
 
     var args_it = std.process.args();
     if (!args_it.skip()) @panic("expected self arg");

@@ -3,7 +3,7 @@ const build_map = @import("build_map.zig");
 const Node = std.zig.ast.Node;
 const Tree = std.zig.ast.Tree;
 
-const StateMap = @import("map.zig").StringKeyHashMap([]u8);
+const StateMap = std.StringHashMap([]u8);
 
 /// Serialize a string into the given serializer. Uses a simple u29 length
 /// prefix + the string itself.
@@ -25,6 +25,10 @@ pub const State = struct {
             .allocator = allocator,
             .map = StateMap.init(allocator),
         };
+    }
+
+    pub fn deinit(self: *State) void {
+        self.map.deinit();
     }
 
     /// Deserialize a string from the stream into memory.
