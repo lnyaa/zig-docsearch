@@ -1,6 +1,7 @@
 # zig-docsearch
 
-search over zig stdlib doc comments
+search over zig stdlib doc comments (and generate a simple html file with
+what's possible)
 
 ## limitations
 
@@ -12,10 +13,15 @@ search over zig stdlib doc comments
 
 ```bash
 zig build install --prefix ~/.local/
+```
 
+```bash
 # build the state out of the std file in your zig installation
 zig-docsearch ./state.bin build /path/to/zig/source/std/std.zig
 
 # search through
 zig-docsearch ./state.bin search 'mem'
+
+# make a single html file
+zig-docsearch ./state.bin htmlgen index.html
 ```
