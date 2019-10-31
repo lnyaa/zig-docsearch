@@ -1,5 +1,7 @@
 # zig-docsearch
 
+# NOTE: zig master now has in-progress docs! see https://github.com/ziglang/zig/issues/21
+
 search over zig stdlib doc comments (and generate a simple html file with
 what's possible)
 
