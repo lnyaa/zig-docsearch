@@ -11,7 +11,7 @@ const InError = std.fs.File.WriteError;
 fn loadState(state_path: []const u8, state: *State) !void {
     var path = try std.fs.path.resolve(
         state.allocator,
-        [_][]const u8{state_path},
+        &[_][]const u8{state_path},
     );
 
     var state_file = try std.fs.File.openRead(path);
@@ -29,11 +29,11 @@ fn doSearch(state: *State, search_term: []u8) !void {
 
 fn doBuild(state_path: []const u8, state: *State, zig_std_path: []u8) !void {
     try build_map.build(state, "std", zig_std_path);
-    std.debug.warn("build finished, {} total defs\n", state.map.size);
+    std.debug.warn("build finished, {} total defs\n", .{state.map.size});
 
     var state_file = try std.fs.File.openWrite(try std.fs.path.resolve(
         state.allocator,
-        [_][]const u8{state_path},
+        &[_][]const u8{state_path},
     ));
     defer state_file.close();
 
@@ -42,7 +42,7 @@ fn doBuild(state_path: []const u8, state: *State, zig_std_path: []u8) !void {
     var serial = std.io.Serializer(.Big, .Bit, InError).init(stream);
 
     try state.serialize(&serial);
-    std.debug.warn("serialization OK\n");
+    std.debug.warn("serialization OK\n", .{});
 }
 
 pub fn main() anyerror!void {

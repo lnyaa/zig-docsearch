@@ -10,7 +10,7 @@ pub fn appendNamespace(
     namespace: []const u8,
     element: []const u8,
 ) ![]const u8 {
-    return try std.mem.join(allocator, ".", [_][]const u8{ namespace, element });
+    return try std.mem.join(allocator, ".", &[_][]const u8{ namespace, element });
 }
 
 /// Check if the right hand side of the declaration is an @import, and if it is
@@ -57,7 +57,7 @@ fn recurseIfImport(
 
     var path = try std.fs.path.join(
         state.allocator,
-        [_][]const u8{ dirname, token },
+        &[_][]const u8{ dirname, token },
     );
 
     // the fallback to {dirname, name, token} exists since @import() calls
@@ -72,7 +72,7 @@ fn recurseIfImport(
         if (err == error.FileNotFound) {
             path = try std.fs.path.join(
                 state.allocator,
-                [_][]const u8{ dirname, name, token },
+                &[_][]const u8{ dirname, name, token },
             );
         } else {
             return err;
@@ -121,7 +121,7 @@ pub fn build(
     namespace: []const u8,
     zig_src_path: []const u8,
 ) anyerror!void {
-    std.debug.warn("{} {}\n", namespace, zig_src_path);
+    std.debug.warn("{} {}\n", .{ namespace, zig_src_path });
     var file = try std.fs.File.openRead(zig_src_path);
     defer file.close();
 

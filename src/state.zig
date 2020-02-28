@@ -78,11 +78,10 @@ pub const State = struct {
         var cnt: usize = 0;
 
         while (it.next()) |kv| {
-            std.debug.warn(
-                "serializing '{}' ({} bytes)\n",
+            std.debug.warn("serializing '{}' ({} bytes)\n", .{
                 kv.key,
                 kv.value.len,
-            );
+            });
 
             try serializeStr(serializer, kv.key);
             try serializeStr(serializer, kv.value);
@@ -91,17 +90,19 @@ pub const State = struct {
 
         // sentry value to determine end of hashmap
         // maybe we could just catch an endofstream instead, idk.
-        try serializer.serialize(u29(0));
+        try serializer.serialize(@as(u29, 0));
 
-        std.debug.warn("finished {} elements\n", cnt);
+        std.debug.warn("finished {} elements\n", .{cnt});
     }
 
     /// From a given Node.DocComment, convert it to [][]const u8, with the
     /// doc comment tokens trimmed out.
     fn docToSlice(self: *State, tree: var, doc_opt: ?*Node.DocComment) ![][]const u8 {
+        // TODO: use ArrayList
+        var lines: [][]const u8 = try self.allocator.alloc([]u8, 0);
+
         if (doc_opt) |doc| {
             var it = doc.lines.iterator(0);
-            var lines: [][]const u8 = try self.allocator.alloc([]u8, 0);
 
             while (it.next()) |line_idx| {
                 lines = try self.allocator.realloc(lines, lines.len + 1);
@@ -112,7 +113,7 @@ pub const State = struct {
 
             return lines;
         } else {
-            return [_][]u8{};
+            return lines;
         }
     }
 
@@ -130,11 +131,11 @@ pub const State = struct {
             node_name,
         );
 
-        std.debug.warn("node: {}\n", full_name);
+        std.debug.warn("node: {}\n", .{full_name});
         var lines = try self.docToSlice(tree, doc);
 
         for (lines) |line| {
-            std.debug.warn("\tdoc: {}\n", line);
+            std.debug.warn("\tdoc: {}\n", .{line});
         }
 
         var lines_single = try std.mem.join(self.allocator, "\n", lines);

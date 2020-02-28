@@ -62,7 +62,7 @@ pub fn doSearch(state: *State, unprep_term: []u8) !void {
         var score: f32 = 0.0;
 
         var count = doCount(kv.value, search_term);
-        score = @intToFloat(f32, count) / f32(50);
+        score = @intToFloat(f32, count) / @as(f32, 50);
 
         var key_lower = try toLower(state.allocator, kv.key);
         defer state.allocator.free(key_lower);
@@ -87,7 +87,7 @@ pub fn doSearch(state: *State, unprep_term: []u8) !void {
     var kvs_slice = kvs.toSlice();
     std.sort.sort(ScoreMap.KV, kvs_slice, compareFunc);
 
-    var stdout_file = try std.io.getStdOut();
+    var stdout_file = std.io.getStdOut();
     const stdout = &stdout_file.outStream().stream;
 
     if (kvs_slice.len > 15) kvs_slice = kvs_slice[0..14];
@@ -96,9 +96,9 @@ pub fn doSearch(state: *State, unprep_term: []u8) !void {
 
         if (kv_opt) |kv_state| {
             if (kv_state.value.len > 0) {
-                try stdout.print("{}:\n\t{}\n---\n", kv.key, kv_state.value);
+                try stdout.print("{}:\n\t{}\n---\n", .{ kv.key, kv_state.value });
             } else {
-                try stdout.print("{}\n---\n", kv.key);
+                try stdout.print("{}\n---\n", .{kv.key});
             }
         }
     }
