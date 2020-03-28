@@ -68,7 +68,7 @@ fn recurseIfImport(
     // it contains @import("callgrind.zig"), but it isn't at std/callgrind.zig,
     // but at std/valgrind/callgrind.zig
 
-    std.fs.File.access(path) catch |err| {
+    _ = std.fs.cwd().openFile(path, .{}) catch |err| {
         if (err == error.FileNotFound) {
             path = try std.fs.path.join(
                 state.allocator,
@@ -122,7 +122,7 @@ pub fn build(
     zig_src_path: []const u8,
 ) anyerror!void {
     std.debug.warn("{} {}\n", .{ namespace, zig_src_path });
-    var file = try std.fs.File.openRead(zig_src_path);
+    var file = try std.fs.cwd().openFile(zig_src_path, .{});
     defer file.close();
 
     const total_bytes = try file.getEndPos();

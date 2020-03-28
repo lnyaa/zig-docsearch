@@ -50,11 +50,10 @@ fn printContents(state: *State, stream: var) !void {
 }
 
 pub fn genHtml(state: *State, out_path: []const u8) !void {
-    var file = try std.fs.File.openWrite(out_path);
+    var file = try std.fs.cwd().createFile(out_path, .{ .read = false, .truncate = true });
     defer file.close();
 
-    var out = file.outStream();
-    var stream = &out.stream;
+    var stream = file.outStream();
 
     try stream.print("<!doctype html>\n<html>\n", .{});
     try stream.print("<head>\n<meta chatset=\"utf-8\">\n<title>zig docs</title>\n", .{});

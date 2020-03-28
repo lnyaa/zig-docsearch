@@ -14,11 +14,10 @@ fn loadState(state_path: []const u8, state: *State) !void {
         &[_][]const u8{state_path},
     );
 
-    var state_file = try std.fs.File.openRead(path);
+    var state_file = try std.fs.cwd().openFile(path, .{ .read = true, .write = false });
     defer state_file.close();
     var in = state_file.inStream();
-    var stream = &in.stream;
-    var deserial = std.io.Deserializer(.Big, .Bit, OutError).init(stream);
+    var deserial = std.io.Deserializer(.Big, .Bit, @TypeOf(in)).init(in);
 
     try deserial.deserializeInto(state);
 }
@@ -31,15 +30,19 @@ fn doBuild(state_path: []const u8, state: *State, zig_std_path: []u8) !void {
     try build_map.build(state, "std", zig_std_path);
     std.debug.warn("build finished, {} total defs\n", .{state.map.size});
 
-    var state_file = try std.fs.File.openWrite(try std.fs.path.resolve(
-        state.allocator,
-        &[_][]const u8{state_path},
-    ));
+    const resolved_path = try std.fs.path.resolve(state.allocator, &[_][]const u8{state_path});
+
+    var state_file = try (std.fs.cwd().openFile(resolved_path, .{
+        .write = true,
+    }) catch |err| blk: {
+        if (err != error.FileNotFound) break :blk err;
+        break :blk std.fs.cwd().createFile(resolved_path, .{});
+    });
+
     defer state_file.close();
 
     var out = state_file.outStream();
-    var stream = &out.stream;
-    var serial = std.io.Serializer(.Big, .Bit, InError).init(stream);
+    var serial = std.io.Serializer(.Big, .Bit, @TypeOf(out)).init(out);
 
     try state.serialize(&serial);
     std.debug.warn("serialization OK\n", .{});
