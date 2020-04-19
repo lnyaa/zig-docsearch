@@ -84,7 +84,7 @@ pub fn doSearch(state: *State, unprep_term: []u8) !void {
         }
     }
 
-    var kvs_slice = kvs.toSlice();
+    var kvs_slice = kvs.items;
     std.sort.sort(ScoreMap.KV, kvs_slice, compareFunc);
 
     var stdout_file = std.io.getStdOut();

@@ -49,7 +49,7 @@ fn doBuild(state_path: []const u8, state: *State, zig_std_path: []u8) !void {
 }
 
 pub fn main() anyerror!void {
-    var allocator = std.heap.direct_allocator;
+    var allocator = std.heap.page_allocator;
     var state = State.init(allocator);
     defer state.deinit();
 
@@ -60,18 +60,16 @@ pub fn main() anyerror!void {
     const action = try (args_it.next(allocator) orelse @panic("expected action arg"));
 
     if (std.mem.eql(u8, action, "build")) {
-        const zig_std_path = try (args_it.next(allocator) orelse @panic("expected zig stdlib path arg"));
-
-        try doBuild(state_path, &state, zig_std_path);
+        @panic("functionality removed");
     } else if (std.mem.eql(u8, action, "search")) {
         const search_term = try (args_it.next(allocator) orelse @panic("expected search term arg"));
 
-        try loadState(state_path, &state);
+        //try loadState(state_path, &state);
         try doSearch(&state, search_term);
     } else if (std.mem.eql(u8, action, "htmlgen")) {
         const out_path = try (args_it.next(allocator) orelse @panic("expected out path arg"));
 
-        try loadState(state_path, &state);
+        //try loadState(state_path, &state);
         try htmlgen.genHtml(&state, out_path);
     } else {
         @panic("invalid action");
