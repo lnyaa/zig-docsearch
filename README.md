@@ -1,15 +1,11 @@
 # zig-docsearch
 
-# NOTE: zig master now has in-progress docs! see https://github.com/ziglang/zig/issues/21
+**NOTE: zig master now has in-progress docs! see https://github.com/ziglang/zig/issues/21**
 
 search over zig stdlib doc comments (and generate a simple html file with
 what's possible)
 
-## limitations
-
- - structs with `@import`s won't be checked
- - structs that don't have `pub` members will still be counted towards the end
- - search algorithm is very rudimentary
+WIP: using -fdump-analysis
 
 ## using
 
