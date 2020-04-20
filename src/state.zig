@@ -141,4 +141,13 @@ pub const State = struct {
         var lines_single = try std.mem.join(self.allocator, "\n", lines);
         _ = try self.map.put(full_name, lines_single);
     }
+
+    pub fn readDumpAnalysis(self: *@This(), dump_analysis_data: []const u8) !void {
+        var p = std.json.Parser.init(self.allocator, true);
+        defer p.deinit();
+        var tree = try p.parse(dump_analysis_data);
+        std.debug.warn("awoo?\n", .{});
+        var root = tree.root;
+        root.dump();
+    }
 };
