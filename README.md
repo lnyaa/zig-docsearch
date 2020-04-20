@@ -9,17 +9,20 @@ WIP: using -fdump-analysis
 
 ## using
 
-```bash
-zig build install --prefix ~/.local/
+firstly, build the semantic analysis file from the zig standard library.
+
+```
+zig test path/to/std/std.zig -fdump-analysis --override-lib-dir path/to/lib/if/needed --output-dir . -fno-emit-bin
 ```
 
+build and use zig-docsearch
+
 ```bash
-# build the state out of the std file in your zig installation
-zig-docsearch ./state.bin build /path/to/zig/source/std/std.zig
+zig build
 
 # search through
-zig-docsearch ./state.bin search 'mem'
+zig-docsearch ./test-analysis.json search 'mem'
 
-# make a single html file
+# make a single html file (WIP)
 zig-docsearch ./state.bin htmlgen index.html
 ```
